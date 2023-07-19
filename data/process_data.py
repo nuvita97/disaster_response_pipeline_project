@@ -2,15 +2,53 @@ import sys
 
 
 def load_data(messages_filepath, categories_filepath):
-    pass
+     """ Read and merge the raw datasets """
+     
+    # Load 2 datasets
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
+
+    # Merge datasets
+    df = messages.join(categories.set_index('id'), on='id')
+
+    return df
 
 
 def clean_data(df):
-    pass
+    """ Steps to clean data """
+
+    # Create a dataframe of the 36 individual category columns
+    categories = df['categories'].str.split(';', expand=True)
+
+    # Extract a list of new column names for categories
+    row = categories.iloc[0]
+    category_colnames = [name.split("-")[0] for name in row]
+
+    # Rename the columns of categories
+    categories.columns = category_colnames
+    
+    # Convert category values to just numbers 0 or 1
+    for column in categories:
+        categories[column] = categories[column].str.split('-').str[1]
+        categories[column] = categories[column].astype(int)
+    
+    # Drop the original categories column
+    df = df.drop('categories', axis=1)
+    
+    # Concatenate the original dataframe with the new `categories` dataframe
+    df = pd.concat([df, categories], axis=1)
+
+    # Drop duplicates
+    df = df.drop_duplicates()
+
+    return df
 
 
 def save_data(df, database_filename):
-    pass  
+    """ Store in a SQLite database"""
+
+    engine = create_engine('sqlite:///' + database_filename)
+    df.to_sql('message', engine, index=False, if_exists='replace')   
 
 
 def main():
