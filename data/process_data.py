@@ -42,6 +42,10 @@ def clean_data(df):
     # Drop duplicates
     df = df.drop_duplicates()
 
+    # Drop rows when 'related' is '2'
+    df = df.drop(df[df['related'] == 2].index)
+
+
     return df
 
 
