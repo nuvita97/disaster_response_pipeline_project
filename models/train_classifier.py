@@ -1,24 +1,82 @@
 import sys
-
+import pandas as pd
+import numpy as np
+import nltk
+import pickle
+from nltk import punkt, wordnet
+from sqlalchemy import create_engine
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
 
 def load_data(database_filepath):
-    pass
+    """ Load data from SQLite database """
+
+    engine = create_engine('sqlite:///' + database_filepath)
+    df = pd.read_sql_table('messages', engine)
+
+    X = df['message'].values
+    Y = df.iloc[:, 4:].values
+
+    category_names = list(df.iloc[:, 4:].columns)
+    return X, Y, category_names
 
 
 def tokenize(text):
-    pass
+    """ Tokenize data """
+
+    tokens = word_tokenize(text)
+    lemmatizer = WordNetLemmatizer()
+
+    clean_tokens = []
+    for token in tokens:
+        clean_tok = lemmatizer.lemmatize(token).lower().strip()
+        clean_tokens.append(clean_tok)
+
+    return clean_tokens
+
 
 
 def build_model():
-    pass
+    """ Build model pipeline """
 
+    pipeline = Pipeline(
+        [('vect', CountVectorizer(tokenizer=tokenize)),
+        ('tfidf', TfidfTransformer()),
+        ('clf', MultiOutputClassifier(RandomForestClassifier()))]
+    )
+
+    parameters = {
+        'clf__estimator__criterion': ['gini', 'entropy']
+    }
+
+    cv = GridSearchCV(pipeline, param_grid=parameters)
+    
+    return cv
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    """ Evaluate model performance """
+
+    Y_pred = model.predict(X_test)
+
+    index = 0
+    for category in category_names:
+        print("Category in column {}: {}".format(index, category))
+        evaluation_report = classification_report(Y_test[:, index], Y_pred[:, index])
+        index += 1
+        print(evaluation_report)
 
 
 def save_model(model, model_filepath):
-    pass
+    """ Save model as a pickle file """
+
+    pickle.dump(model, open(model_filepath, 'wb'))
 
 
 def main():

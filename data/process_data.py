@@ -1,8 +1,9 @@
 import sys
-
+import pandas as pd
+from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
-     """ Read and merge the raw datasets """
+    """ Read and merge the raw datasets """
      
     # Load 2 datasets
     messages = pd.read_csv(messages_filepath)
@@ -12,7 +13,7 @@ def load_data(messages_filepath, categories_filepath):
     df = messages.join(categories.set_index('id'), on='id')
 
     return df
-
+    
 
 def clean_data(df):
     """ Steps to clean data """
@@ -22,7 +23,7 @@ def clean_data(df):
 
     # Extract a list of new column names for categories
     row = categories.iloc[0]
-    category_colnames = [name.split("-")[0] for name in row]
+    category_colnames = [name.split('-')[0] for name in row]
 
     # Rename the columns of categories
     categories.columns = category_colnames
@@ -48,7 +49,7 @@ def save_data(df, database_filename):
     """ Store in a SQLite database"""
 
     engine = create_engine('sqlite:///' + database_filename)
-    df.to_sql('message', engine, index=False, if_exists='replace')   
+    df.to_sql('messages', engine, index=False, if_exists='replace')  
 
 
 def main():
